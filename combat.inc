@@ -81,8 +81,8 @@ node ends
 ; data
 ;=================
 .data      
-AppName db "Combat", 0 ;Judul jendela
-ClassName db "CombatClass", 0 ; Kelas jendela
+AppName db "Jancox", 0 ;Judul jendela
+ClassName db "JancoxClass", 0 ; Kelas jendela
 
 won1 db "Pemain 1 menang!!! Tekan (r) untuk mengatur ulang.", 0
 len_won1 equ $ - won1
