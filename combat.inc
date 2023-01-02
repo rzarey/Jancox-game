@@ -20,26 +20,27 @@ includelib C:\masm32\lib\msimg32.lib
 ;=================
 ; structs
 ;=================
-pair struct ;Par ordenado (<a, b>): 
+pair struct ; Pasangan terurut (<a, b>): 
     x  db ?
     y  db ?
 pair ends
 
-gameObj struct ;Objeto primário (<x, y, <Vx, Vy>>):
+gameObj struct ;Objek utama (<x, y, <Vx, Vy>>):
 	x  dw ?
     y  dw ?
     
 	speed pair <>
 gameObj ends
 
-player struct ;Dados de um jogador (<Life, <x, y, <Vx, Vy>>>):
+player struct 
+;Data pemain (<Hidup, <x, y, <Vx, Vy>>>):
     life db ?
     direc db ?
 
     playerObj gameObj <>
 player ends
 
-node struct ;Nó de uma lista ligada
+node struct ;Simpul dari daftar tertaut
     next dd ?
     value gameObj <>
 node ends
@@ -48,51 +49,51 @@ node ends
 ; consts
 ;=================
 .const
-	WIN_HT equ 700 ;Altura da janela
-    WIN_WD equ 1200 ;Largura da janela
+	WIN_HT equ 700 ;Tinggi jendela
+    WIN_WD equ 1200 ;Lebar jendela
 
     OFFSETX equ WIN_WD - HALF_SIZE
     OFFSETY equ WIN_HT - HALF_SIZE
 
-    IMG_SIZE equ 32 ;Altura e largura da img do jogador
-    IMG_SIZE2 equ IMG_SIZE * IMG_SIZE ;Quadrado de IMG_SIZE
+    IMG_SIZE equ 32 ;Tinggi dan lebar img pemain
+    IMG_SIZE2 equ IMG_SIZE * IMG_SIZE ;Kuadrat IMG_SIZE
     HALF_SIZE equ IMG_SIZE / 2 
 
     SHOT_RADIUS equ 3
 
-    D2_SHOT equ (HALF_SIZE + SHOT_RADIUS) * (HALF_SIZE + SHOT_RADIUS) ;Quadrado
-                                    ;da distância minima entre o tiro e o jogador 
+    D2_SHOT equ (HALF_SIZE + SHOT_RADIUS) * (HALF_SIZE + SHOT_RADIUS) ;Kotak
+                                    ; jarak minimum antara tembakan dan pemain
 
-    SCORE_SPACING equ 10 ;Espaço de separação dos digitos do jogo
+    SCORE_SPACING equ 10 ; Ruang pemisahan digit permainan
 
-    SPEED equ 4 ;Velocidade dos jogadores
-    MAX_SCORE equ 5 ;Score máximo para o termino do jogo
-    MAX_LIFE equ 100 ;Vida inicial dos jogadores
-    SHOTS_DELAY equ 3 ;Número de ciclos de espera para atirar
-    TRACKED_SHOTS equ 255 ;Número máximo de tiros na tela, 
-    					 ;antes deles desaparecerem (para cada jogador)
+    SPEED equ 4 ; Kecepatan pemain
+    MAX_SCORE equ 5 ;Skor maksimum untuk akhir permainan
+    MAX_LIFE equ 100 ;Memulai kesehatan pemain
+    SHOTS_DELAY equ 3 ;Jumlah siklus menunggu untuk diaktifkan
+    TRACKED_SHOTS equ 255 ;Jumlah bidikan maksimum di layar,
+    ; sebelum menghilang (untuk setiap pemain)
 
-    SHOT_SPEED equ 3 ;Multiplicador de velocidade dos tiros 
+    SHOT_SPEED equ 3 ;Pengganda kecepatan tembakan 
 
-    NODE_SIZE equ SIZEOF node ;Tamanho em bytes da estrutura de nó
+    NODE_SIZE equ SIZEOF node ;Ukuran dalam byte dari struktur node
 
 ;=================
 ; data
 ;=================
 .data      
-AppName db "Combat", 0 ;Título da janela
-ClassName db "CombatClass", 0 ;Classe da janela
+AppName db "Combat", 0 ;Judul jendela
+ClassName db "CombatClass", 0 ; Kelas jendela
 
-won1 db "O jogador 1 ganhou!!! Aperte (r) para reiniciar.", 0
+won1 db "Pemain 1 menang!!! Tekan (r) untuk mengatur ulang.", 0
 len_won1 equ $ - won1
 
-won2 db "O jogador 2 ganhou!!! Aperte (r) para reiniciar.", 0
+won2 db "Pemain 2 menang!!! Tekan (r) untuk mengatur ulang.", 0
 len_won2 equ $ - won2
 
-draw db "Ouve um empate!!! Aperte (r) para reiniciar.", 0
+draw db "Dengarkan dasi!!! Tekan (r) untuk mengatur ulang.", 0
 len_draw equ $ - draw
 
-;Bitmaps do jogador 1:
+;Pemain 1 bitmap:
 h100 dd 0
 h101 dd 0
 h102 dd 0
@@ -102,7 +103,7 @@ h105 dd 0
 h106 dd 0
 h107 dd 0
 
-;Bitmaps do jogador 2:
+;Pemain 2 bitmap:
 h110 dd 0
 h111 dd 0
 h112 dd 0
@@ -122,48 +123,45 @@ hInstance HINSTANCE ?
 ;=================
 WinMain proto :DWORD, :DWORD   
 
-loadBitmaps proto ;Carrega os bitmaps do jogo
+loadBitmaps proto ; Memuat bitmap game
 
-gameHandler proto :DWORD ;Thread principal do jogo
+gameHandler proto :DWORD ;Utas utama permainan
+updateScreen proto ;Menggambar semua objek di layar
+printShots proto :HDC ;Menarik semua tembakan
+printScores proto :HDC ;Gambarlah papan skor para pemain
+printShot proto :gameObj, :HDC ;Menarik tembakan terakhir
+printPlyr proto :player, :HDC, :HDC, :BYTE ;Gambar pemain terakhir
 
-updateScreen proto ;Desenha na tela todos os objetos
+movShots proto ;Pindahkan semua tembakan
+movObj proto :DWORD ;Memperbarui posisi gameObj yang diteruskan
 
-printShots proto :HDC ;Desenha todos o tiros
-printScores proto :HDC ;Desenha os placares dos jogadores
-printShot proto :gameObj, :HDC ;Desenha o tiro passado
-printPlyr proto :player, :HDC, :HDC, :BYTE ;Desenha o jogador passado
+updateDirec proto :DWORD ;Memperbarui arah pemain
 
-movShots proto ;Move todos o tiros
-movObj proto :DWORD ;Atualiza a posição do gameObj passado
+canMov proto :gameObj, :gameObj ;Memperbarui apakah setiap pemain dapat bergerak
 
-updateDirec proto :DWORD ;Atualiza a direção de um jogador
+mult proto :WORD, :WORD ;Kalikan dua angka (16b) dan masukkan ke dalam eax
 
-canMov proto :gameObj, :gameObj ;Atualiza se cada jogador pode se mover
+incScore proto :DWORD ;Meningkatkan skor pemain terakhir
+checkCrashs proto ;Incrementa o score quando um jogador acerta um tiro;Meningkatkan skor saat pemain melakukan pukulan
+checkShot proto :gameObj, :gameObj ;Memeriksa apakah tembakan mengenai pemain
 
-mult proto :WORD, :WORD ;Multiplica dois números (16 b) e coloca em eax
+resetAll proto ;Mereset posisi pemain ke posisi awal
 
-incScore proto :DWORD ;Incrementa o score do jogador passado
+;Metode daftar tertaut:
 
-checkCrashs proto ;Incrementa o score quando um jogador acerta um tiro
-checkShot proto :gameObj, :gameObj ;Checa se um tiro atingiu um jogador
+addShot proto :player, :DWORD, :DWORD, :DWORD ;Menambahkan bidikan ke daftar
+                                            ;(data pemain yang menembak, ptr
+                                            ;untuk ptr dari node pertama, ptr untuk
+                                            ; ptr dari node terakhir, ptr untuk
+                                            ; ukuran daftar)
 
-resetAll proto ;Restabelece a posição dos jogadores para a inicial
-
-;Métodos de lista ligada:
-
-addShot proto :player, :DWORD, :DWORD, :DWORD ;Adiciona um tiro em uma lista
-                                            ;(dados do jogador que atirou, ptr 
-                                            ;para um ptr do primeiro nó, ptr para
-                                            ;um ptr do último nó, ptr para o 
-                                            ;tamanho da lista)
-
-;Adiciona um nó no final de uma lista (ptr para um ptr do primeiro nó, 
-;ptr para um ptr do último nó, ptr para o tamanho da lista, novo dado):
+;Menambahkan node di akhir daftar (ptr untuk ptr dari node pertama,
+;ptr untuk ptr dari simpul terakhir, ptr untuk panjang daftar, data baru):
 addNode proto :DWORD, :DWORD, :DWORD, :gameObj 
 
-removeFNode proto :DWORD, :DWORD, :DWORD ;Remove um nó do começo de uma lista
-                                        ;(ptr para um ptr do primeiro nó, ptr 
-                                        ;para um ptr do último nó, ptr para o 
-                                        ;tamanho da lista)
+removeFNode proto :DWORD, :DWORD, :DWORD ;Hapus node dari awal daftar
+                                        ;(ptr untuk ptr dari node pertama, ptr
+                                        ;untuk ptr dari node terakhir, ptr untuk
+                                        ; ukuran daftar)
 
-clearAllShots proto ;Limpa as listas de tiros
+clearAllShots proto ;Hapus daftar bidikan

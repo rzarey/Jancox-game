@@ -1,4 +1,4 @@
-no struct ;Estrutura do nó:
+no struct 
     dado db ?
     prox  dd ?
 no ends
